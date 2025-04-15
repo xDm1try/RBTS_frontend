@@ -1,15 +1,9 @@
 import streamlit as st
 
-# Настройка главной страницы
-# Настройка страницы
+local_file = st.Page(
+    "graphics.py", title="Parse file", icon="📂", 
+)
 
-st.title("Главная страница")
-
-st.write("Добро пожаловать в систему тестирования аккумуляторами!")
-
-# main = st.Page(
-#     "main.py", title="Main", icon="🔋", 
-# )
 bat_view = st.Page(
     "Batteries/view.py", title="View", icon="📜", 
 )
@@ -23,11 +17,10 @@ bat_add = st.Page(
     "Batteries/add.py", title="Add", icon="🔋", 
 )
 
-
 pg = st.navigation(
     {
         "Batteries": [bat_view, bat_add, bat_edit, bat_delete],
-        "Tests": [],
+        "Tests": [local_file],
     }
 )
 
