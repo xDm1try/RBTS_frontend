@@ -1,5 +1,9 @@
 import streamlit as st
 
+devices = st.Page(
+    "Devices/devices.py", title="Devices", icon="🤖", 
+)
+
 local_file = st.Page(
     "graphics.py", title="Parse file", icon="📂", 
 )
@@ -19,6 +23,7 @@ bat_add = st.Page(
 
 pg = st.navigation(
     {
+        "Devices": [devices],
         "Batteries": [bat_view, bat_add, bat_edit, bat_delete],
         "Tests": [local_file],
     }

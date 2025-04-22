@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
+
 def parse_data_line(line):
     """
     Парсит строку данных и возвращает словарь с ключами и значениями.
@@ -10,44 +11,41 @@ def parse_data_line(line):
     pairs = line.split()
     for pair in pairs:
         key, value = pair.split('=')
-        # Попробуем преобразовать значение в число (float или int)
+
         try:
             value = float(value)
             if value.is_integer():
-                value = int(value)  # Если значение целое, преобразуем в int
+                value = int(value)
         except ValueError:
-            pass  # Если не число, оставляем как строку
+            pass
         data[key] = value
     return data
+
 
 def main():
     st.title("Просмотр данных из файла")
 
-    # Виджет для загрузки файла
     uploaded_file = st.file_uploader("Выберите файл", type=["txt"])
 
     if uploaded_file is not None:
-        # Чтение данных из загруженного файла
+
         try:
             lines = uploaded_file.readlines()
 
-            # Декодируем строки из байтов в текст
             lines = [line.decode('utf-8').strip() for line in lines]
 
-            # Проверяем, что файл содержит данные
             if lines:
-                # Парсим все строки
+
                 parsed_data = [parse_data_line(line) for line in lines]
 
-                # Создаем DataFrame из спарсенных данных
                 df = pd.DataFrame(parsed_data)
 
-                # Проверяем наличие столбца 'time'
                 if 'time' not in df.columns:
                     st.error("Файл должен содержать столбец 'time'.")
                     return
+                else:
+                    df['time'] = df['time'] - df['time'].iloc[0]
 
-                # Группировка данных по типу: current, voltage, temp
                 current_columns = [col for col in df.columns if 'current' in col]
                 voltage_columns = [col for col in df.columns if 'voltage' in col]
                 temp_columns = [col for col in df.columns if 'temp' in col]
@@ -56,7 +54,6 @@ def main():
                     if col not in current_columns and col not in voltage_columns and col not in temp_columns and col != 'time'
                 ]
 
-                # Функция для создания графика с Plotly
                 def create_plot(df, x_col, y_cols, title, x_title, y_title, show_legend=True):
                     fig = go.Figure()
                     for col in y_cols:
@@ -67,8 +64,8 @@ def main():
                         yaxis_title=y_title,
                         template="plotly",
                         showlegend=show_legend,
-                        margin=dict(l=50, r=50, t=50, b=50),  # Отступы для границ
-                        plot_bgcolor='white',  # Цвет фона графика
+                        margin=dict(l=50, r=50, t=50, b=50),
+                        plot_bgcolor='white',
                         xaxis=dict(
                             showgrid=True,
                             gridwidth=1,
@@ -76,9 +73,9 @@ def main():
                             zeroline=True,
                             zerolinecolor='black',
                             zerolinewidth=2,
-                            linecolor='black',  # Цвет линии оси X
-                            linewidth=2,        # Толщина линии оси X
-                            mirror=True         # Зеркальное отражение оси X
+                            linecolor='black',
+                            linewidth=2,
+                            mirror=True
                         ),
                         yaxis=dict(
                             showgrid=True,
@@ -87,14 +84,13 @@ def main():
                             zeroline=True,
                             zerolinecolor='black',
                             zerolinewidth=2,
-                            linecolor='black',  # Цвет линии оси Y
-                            linewidth=2,        # Толщина линии оси Y
-                            mirror=True         # Зеркальное отражение оси Y
+                            linecolor='black',
+                            linewidth=2,
+                            mirror=True
                         )
                     )
                     return fig
 
-                # График для токов
                 if current_columns:
                     st.subheader("График токов")
                     fig_currents = create_plot(
@@ -102,7 +98,6 @@ def main():
                     )
                     st.plotly_chart(fig_currents, use_container_width=True)
 
-                # График для напряжений
                 if voltage_columns:
                     st.subheader("График напряжений")
                     fig_voltages = create_plot(
@@ -110,7 +105,6 @@ def main():
                     )
                     st.plotly_chart(fig_voltages, use_container_width=True)
 
-                # График для температур
                 if temp_columns:
                     st.subheader("График температур")
                     fig_temps = create_plot(
@@ -118,25 +112,23 @@ def main():
                     )
                     st.plotly_chart(fig_temps, use_container_width=True)
 
-                # График с двумя осями для напряжений и токов
                 if current_columns and voltage_columns:
                     st.subheader("График напряжений и токов (две оси)")
                     fig_combined = go.Figure()
 
-                    # Добавляем напряжения на первую ось Y
                     for col in voltage_columns:
-                        fig_combined.add_trace(go.Scatter(x=df['time'], y=df[col], mode='lines', name=f"Напряжение: {col}", yaxis="y1"))
+                        fig_combined.add_trace(go.Scatter(x=df['time'], y=df[col],
+                                               mode='lines', name=f"Напряжение: {col}", yaxis="y1"))
 
-                    # Добавляем токи на вторую ось Y
                     for col in current_columns:
-                        fig_combined.add_trace(go.Scatter(x=df['time'], y=df[col], mode='lines', name=f"Ток: {col}", yaxis="y2"))
+                        fig_combined.add_trace(go.Scatter(x=df['time'], y=df[col],
+                                               mode='lines', name=f"Ток: {col}", yaxis="y2"))
 
-                    # Настройка макета графика
                     fig_combined.update_layout(
                         title="График напряжений и токов",
                         xaxis_title="Время (сек)",
                         yaxis=dict(
-                            title="Напряжение",
+                            title="Напряжение mV",
                             side="left",
                             showgrid=True,
                             gridwidth=1,
@@ -144,23 +136,23 @@ def main():
                             zeroline=True,
                             zerolinecolor='black',
                             zerolinewidth=2,
-                            linecolor='black',  # Цвет линии оси Y
-                            linewidth=2,        # Толщина линии оси Y
-                            mirror=True         # Зеркальное отражение оси Y
+                            linecolor='black',
+                            linewidth=2,
+                            mirror=True
                         ),
                         yaxis2=dict(
-                            title="Ток",
+                            title="Ток mA",
                             overlaying="y",
                             side="right",
                             showgrid=False,
-                            linecolor='black',  # Цвет линии второй оси Y
-                            linewidth=2,        # Толщина линии второй оси Y
-                            mirror=True         # Зеркальное отражение второй оси Y
+                            linecolor='black',
+                            linewidth=2,
+                            mirror=True
                         ),
                         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                         template="plotly",
-                        margin=dict(l=50, r=50, t=50, b=50),  # Отступы для границ
-                        plot_bgcolor='white',  # Цвет фона графика
+                        margin=dict(l=50, r=50, t=50, b=50),
+                        plot_bgcolor='white',
                         xaxis=dict(
                             showgrid=True,
                             gridwidth=1,
@@ -168,14 +160,13 @@ def main():
                             zeroline=True,
                             zerolinecolor='black',
                             zerolinewidth=2,
-                            linecolor='black',  # Цвет линии оси X
-                            linewidth=2,        # Толщина линии оси X
-                            mirror=True         # Зеркальное отражение оси X
+                            linecolor='black',
+                            linewidth=2,
+                            mirror=True
                         )
                     )
                     st.plotly_chart(fig_combined, use_container_width=True)
 
-                # Графики для остальных числовых параметров
                 if other_numeric_columns:
                     st.subheader("Графики других параметров")
                     for column in other_numeric_columns:
@@ -192,5 +183,6 @@ def main():
 
     else:
         st.info("Пожалуйста, загрузите файл.")
+
 
 main()
