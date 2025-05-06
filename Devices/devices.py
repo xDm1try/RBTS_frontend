@@ -22,9 +22,13 @@ def get_device_list():
         return []
 
 
-def execute_device_action(action: str, params: Dict[str, Any]):
-    st.success(f"Действие '{action}' запущено!")
+def execute_device_action(params: Dict[str, Any]):
+    params["sd_file"] = str(params["sd_file"])
+    params["polling_rate"] = params["polling_rate"]
+
     st.json({"параметры": params})
+    response = requests.post("http://localhost:21216/start_device_actions", json=params)
+    st.success(f"Code {response.status_code=}")
 
 
 st.set_page_config(page_title="Управление устройствами", layout="wide")
@@ -48,7 +52,7 @@ if st.session_state.selected_device:
     st.title(f"Управление устройством: {device.device_name}")
     st.write(f"**IP-адрес:** {device.device_ip}")
     st.write(f"**Статус:** {device.device_status}")
-    st.write(f"**Свободная память:** {device.sd_free_mem} MB")
+    st.write(f"**Свободная память:** {device.sd_free_mem} GB")
 
     st.session_state.test_params["device_name"] = device.device_name
     st.session_state.test_params["device_ip"] = device.device_ip
@@ -64,87 +68,88 @@ if st.session_state.selected_device:
 
     action_params = {}
     if action_type == "Wait":
-        action_params["duration"] = st.number_input(
+        action_params["duration"] = str(st.number_input(
             "Длительность (сек)",
             min_value=1, max_value=100000, value=30, step=1,
             key="charge_duration"
-        )
+        ))
 
     if action_type == "Charge":
         col1, col2 = st.columns(2)
         with col1:
-            action_params["const_volt_mV"] = st.number_input(
+            action_params["const_volt_mV"] = str(st.number_input(
                 "Напряжение (mV)",
                 min_value=3840, max_value=4608, value=4208, step=16,
                 key="charge_voltage"
-            )
+            ))
         with col2:
-            action_params["const_current_mA"] = st.number_input(
-                "Ток (mA)",
+            action_params["const_current_mA"] = str(st.number_input(
+                "Постоянный ток зарядки (mA)",
                 min_value=64, max_value=5056, value=128, step=64,
                 key="charge_current"
-            )
+            ))
         col1, col2 = st.columns(2)
         with col1:
-            action_params["cut_off_current_mA"] = st.number_input(
-                "Ток отсечки",
-                min_value=2, max_value=action_params["const_current_mA"], value=action_params["const_current_mA"] // 2, step=1,
+            action_params["cut_off_current_mA"] = str(st.number_input(
+                "Предел тока для прекращения зарядки",
+                min_value=2, max_value=int(action_params["const_current_mA"]),
+                value=int(action_params["const_current_mA"]) // 2, step=1,
                 key="cut_off_current"
-            )
+            ))
         with col2:
-            action_params["temp_bat_limit"] = st.number_input(
+            action_params["temp_bat_limit"] = str(st.number_input(
                 "Максимальная температура (°C)",
                 min_value=20, max_value=100, value=45, step=1,
                 key="temp_bat_limit"
-            )
+            ))
         action_params["timeout"] = st.checkbox(
             "Timeout действия",
             value=True,
             key="timeout"
         )
         if action_params["timeout"]:
-            action_params["duration"] = st.number_input(
+            action_params["duration"] = str(st.number_input(
                 "Длительность (сек)",
                 min_value=1, max_value=100000, value=30, step=1,
                 key="charge_duration"
-            )
+            ))
 
     elif action_type == "Discharge":
         col1, col2 = st.columns(2)
         with col1:
-            action_params["discharge_current"] = st.number_input(
-                "Ток разрядки (А)",
+            action_params["discharge_current"] = str(st.number_input(
+                "Постояный ток разрядки (А)",
                 min_value=5, max_value=1500, value=300, step=1,
                 key="discharge_current"
-            )
-            action_params["start_duty"] = st.number_input(
-                "Стартовая скважность",
+            ))
+            action_params["start_duty"] = str(st.number_input(
+                "Стартовое значиение ШИМ",
                 min_value=0, max_value=100, value=20, step=1,
                 key="start_duty"
-            )
+            ))
         with col2:
-            action_params["dicharge_voltage_limit"] = st.number_input(
-                "Напряжение отсечки (В)",
+            action_params["dicharge_voltage_limit"] = str(st.number_input(
+                "Порог напряжения для прекращения разрядки (В)",
                 min_value=0, max_value=5000, value=2750, step=1,
                 key="dicharge_voltage_limit"
-            )
+            ))
 
-        action_params["temp_bat_limit"] = st.number_input(
+        action_params["temp_bat_limit"] = str(st.number_input(
             "Максимальная температура (°C)",
             min_value=0, max_value=100, value=45, step=1,
             key="temp_bat_limit"
-        )
+        ))
         action_params["timeout"] = st.checkbox(
             "Timeout действия",
             value=True,
             key="timeout"
         )
         if action_params["timeout"]:
-            action_params["duration"] = st.number_input(
+            action_params["duration"] = str(st.number_input(
                 "Длительность (сек)",
                 min_value=1, max_value=100000, value=30, step=1,
                 key="charge_duration"
-            )
+            ))
 
     if action_type and st.button("Добавить действие в очередь"):
         new_action = {
@@ -174,13 +179,15 @@ if st.session_state.selected_device:
                     key="filename_input"
                 )
             with col3:
-                st.session_state.test_params["polling_rate"] = st.number_input(
+                st.session_state.test_params["polling_rate"] = str(st.number_input(
                     "Частота опроса (сек)",
                     min_value=1,
                     max_value=60,
                     value=5,
                     key="polling_rate_input"
                 )
+                )
+        # st.session_state.test_params["sd_file"] = str(st.session_state.test_params["sd_file"])
 
         st.write(f"Устройство: {st.session_state.test_params['device_ip']}")
 
@@ -198,11 +205,7 @@ if st.session_state.selected_device:
             if st.button("Запустить все действия", type="primary"):
                 import pprint as pp
                 pp.pprint(st.session_state.test_params)
-                for action in st.session_state.test_params["actions"]:
-                    execute_device_action(
-                        action["type"],
-                        action["params"]
-                    )
+                execute_device_action(st.session_state.test_params)
                 st.session_state.test_params["actions"] = []
         with col2:
             if st.button("Очистить очередь"):
@@ -252,7 +255,7 @@ else:
             with cols[3]:
                 st.write(f"{device.sd_free_mem} MB")
             with cols[4]:
-                if st.button(f"Управление", key=f"manage_{device.device_ip}"):
+                if st.button("Управление", key=f"manage_{device.device_ip}"):
                     st.session_state.selected_device = device
                     st.rerun()
     else:

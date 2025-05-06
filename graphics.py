@@ -56,8 +56,15 @@ def main():
 
                 def create_plot(df, x_col, y_cols, title, x_title, y_title, show_legend=True):
                     fig = go.Figure()
-                    for col in y_cols:
-                        fig.add_trace(go.Scatter(x=df[x_col], y=df[col], mode='lines', name=col))
+                    colors = ['blue', 'green', 'orange', 'purple', 'red', 'cyan', 'magenta']
+                    for idx, col in enumerate(y_cols):
+                        fig.add_trace(go.Scatter(
+                            x=df[x_col], 
+                            y=df[col], 
+                            mode='lines',
+                            name=col,
+                            line=dict(color=colors[idx % len(colors)], width=2.5)  # Увеличенная толщина линии
+                        ))
                     fig.update_layout(
                         title=title,
                         xaxis_title=x_title,
@@ -75,7 +82,8 @@ def main():
                             zerolinewidth=2,
                             linecolor='black',
                             linewidth=2,
-                            mirror=True
+                            mirror=True,
+                            tickfont=dict(size=16, weight='bold')  # Жирные и крупные метки
                         ),
                         yaxis=dict(
                             showgrid=True,
@@ -86,7 +94,8 @@ def main():
                             zerolinewidth=2,
                             linecolor='black',
                             linewidth=2,
-                            mirror=True
+                            mirror=True,
+                            tickfont=dict(size=16, weight='bold')  # Жирные и крупные метки
                         )
                     )
                     return fig
@@ -116,13 +125,28 @@ def main():
                     st.subheader("График напряжений и токов (две оси)")
                     fig_combined = go.Figure()
 
-                    for col in voltage_columns:
-                        fig_combined.add_trace(go.Scatter(x=df['time'], y=df[col],
-                                               mode='lines', name=f"Напряжение: {col}", yaxis="y1"))
+                    colors_voltage = ['blue', 'navy']
+                    colors_current = ['red', 'darkred']
 
-                    for col in current_columns:
-                        fig_combined.add_trace(go.Scatter(x=df['time'], y=df[col],
-                                               mode='lines', name=f"Ток: {col}", yaxis="y2"))
+                    for idx, col in enumerate(voltage_columns):
+                        fig_combined.add_trace(go.Scatter(
+                            x=df['time'], 
+                            y=df[col],
+                            mode='lines', 
+                            name=f"Напряжение: {col}", 
+                            yaxis="y1",
+                            line=dict(color=colors_voltage[idx % len(colors_voltage)], width=2.5)
+                        ))
+
+                    for idx, col in enumerate(current_columns):
+                        fig_combined.add_trace(go.Scatter(
+                            x=df['time'], 
+                            y=df[col],
+                            mode='lines', 
+                            name=f"Ток: {col}", 
+                            yaxis="y2",
+                            line=dict(color=colors_current[idx % len(colors_current)], width=2.5)
+                        ))
 
                     fig_combined.update_layout(
                         title="График напряжений и токов",
@@ -138,7 +162,8 @@ def main():
                             zerolinewidth=2,
                             linecolor='black',
                             linewidth=2,
-                            mirror=True
+                            mirror=True,
+                            tickfont=dict(size=16, weight='bold')
                         ),
                         yaxis2=dict(
                             title="Ток mA",
@@ -147,7 +172,8 @@ def main():
                             showgrid=False,
                             linecolor='black',
                             linewidth=2,
-                            mirror=True
+                            mirror=True,
+                            tickfont=dict(size=16, weight='bold')
                         ),
                         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                         template="plotly",
@@ -162,7 +188,8 @@ def main():
                             zerolinewidth=2,
                             linecolor='black',
                             linewidth=2,
-                            mirror=True
+                            mirror=True,
+                            tickfont=dict(size=16, weight='bold')
                         )
                     )
                     st.plotly_chart(fig_combined, use_container_width=True)
