@@ -253,7 +253,7 @@ else:
             with cols[2]:
                 st.write(device.device_ip)
             with cols[3]:
-                st.write(f"{device.sd_free_mem} MB")
+                st.write(f"{device.sd_free_mem} GB")
             with cols[4]:
                 if st.button("Управление", key=f"manage_{device.device_ip}"):
                     st.session_state.selected_device = device

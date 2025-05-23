@@ -63,7 +63,7 @@ def main():
                             y=df[col], 
                             mode='lines',
                             name=col,
-                            line=dict(color=colors[idx % len(colors)], width=2.5)  # Увеличенная толщина линии
+                            line=dict(color=colors[idx % len(colors)], width=2.5)
                         ))
                     fig.update_layout(
                         title=title,
@@ -80,10 +80,10 @@ def main():
                             zeroline=True,
                             zerolinecolor='black',
                             zerolinewidth=2,
-                            linecolor='black',
-                            linewidth=2,
+                            linecolor='black',           # Ось X — черная
+                            linewidth=3,                 # Увеличенная толщина
                             mirror=True,
-                            tickfont=dict(size=16, weight='bold')  # Жирные и крупные метки
+                            tickfont=dict(size=16, weight='bold')
                         ),
                         yaxis=dict(
                             showgrid=True,
@@ -95,7 +95,7 @@ def main():
                             linecolor='black',
                             linewidth=2,
                             mirror=True,
-                            tickfont=dict(size=16, weight='bold')  # Жирные и крупные метки
+                            tickfont=dict(size=16, weight='bold')
                         )
                     )
                     return fig
@@ -186,8 +186,8 @@ def main():
                             zeroline=True,
                             zerolinecolor='black',
                             zerolinewidth=2,
-                            linecolor='black',
-                            linewidth=2,
+                            linecolor='black',       # Чёрная ось X
+                            linewidth=3,             # Толще обычного
                             mirror=True,
                             tickfont=dict(size=16, weight='bold')
                         )
