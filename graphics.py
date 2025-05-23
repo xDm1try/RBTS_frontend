@@ -5,20 +5,38 @@ import plotly.graph_objects as go
 
 def parse_data_line(line):
     """
-    Парсит строку данных и возвращает словарь с ключами и значениями.
+    Парсит строку данных и возвращает словарь с ключами и значениями (на русском языке).
     """
+    RUSSIAN_NAMES = {
+        "time": "Время",
+        "temp_bat": "Температура батареи",
+        "temp_env": "Температура окружающей среды",
+        "temp_load": "Температура нагрузки",
+        "bat_voltage": "Напряжение батареи",
+        "bat_current": "Ток батареи",
+        "load_voltage": "Напряжение нагрузки",
+        "load_current": "Ток нагрузки",
+        "load_duty": "Скважность ШИМ в %",
+        "charge_status": "Статус зарядки",
+        "const_current": "Постоянный ток",
+        "const_voltage": "Постоянное напряжение"
+    }
+
     data = {}
     pairs = line.split()
     for pair in pairs:
         key, value = pair.split('=')
+
+        # Переводим ключ, если он есть в словаре, иначе оставляем как есть
+        translated_key = RUSSIAN_NAMES.get(key, key)
 
         try:
             value = float(value)
             if value.is_integer():
                 value = int(value)
         except ValueError:
-            pass
-        data[key] = value
+            pass  # Оставляем как строку, если не число
+        data[translated_key] = value
     return data
 
 
@@ -40,18 +58,18 @@ def main():
 
                 df = pd.DataFrame(parsed_data)
 
-                if 'time' not in df.columns:
-                    st.error("Файл должен содержать столбец 'time'.")
+                if 'Время' not in df.columns:
+                    st.error("Файл должен содержать столбец 'Время'.")
                     return
                 else:
-                    df['time'] = df['time'] - df['time'].iloc[0]
+                    df['Время'] = df['Время'] - df['Время'].iloc[0]
 
-                current_columns = [col for col in df.columns if 'current' in col]
-                voltage_columns = [col for col in df.columns if 'voltage' in col]
-                temp_columns = [col for col in df.columns if 'temp' in col]
+                current_columns = [col for col in df.columns if 'ток' in col.lower()]
+                voltage_columns = [col for col in df.columns if 'напряжение' in col.lower()]
+                temp_columns = [col for col in df.columns if 'температура' in col.lower()]
                 other_numeric_columns = [
                     col for col in df.select_dtypes(include=['number']).columns
-                    if col not in current_columns and col not in voltage_columns and col not in temp_columns and col != 'time'
+                    if col not in current_columns and col not in voltage_columns and col not in temp_columns and col != 'Время'
                 ]
 
                 def create_plot(df, x_col, y_cols, title, x_title, y_title, show_legend=True):
@@ -80,10 +98,11 @@ def main():
                             zeroline=True,
                             zerolinecolor='black',
                             zerolinewidth=2,
-                            linecolor='black',           # Ось X — черная
-                            linewidth=3,                 # Увеличенная толщина
+                            linecolor='black',
+                            linewidth=3,
                             mirror=True,
-                            tickfont=dict(size=16, weight='bold')
+                            tickfont=dict(size=16, weight='bold'),
+                            tickformat="f"  # <---- ЗДЕСЬ: отключаем экспоненциальный формат
                         ),
                         yaxis=dict(
                             showgrid=True,
@@ -103,21 +122,21 @@ def main():
                 if current_columns:
                     st.subheader("График токов")
                     fig_currents = create_plot(
-                        df, 'time', current_columns, "График токов", "Время (сек)", "Значение"
+                        df, 'Время', current_columns, "График токов", "Время (сек)", "Значение mA"
                     )
                     st.plotly_chart(fig_currents, use_container_width=True)
 
                 if voltage_columns:
                     st.subheader("График напряжений")
                     fig_voltages = create_plot(
-                        df, 'time', voltage_columns, "График напряжений", "Время (сек)", "Значение"
+                        df, 'Время', voltage_columns, "График напряжений", "Время (сек)", "Значение mV"
                     )
                     st.plotly_chart(fig_voltages, use_container_width=True)
 
                 if temp_columns:
                     st.subheader("График температур")
                     fig_temps = create_plot(
-                        df, 'time', temp_columns, "График температур", "Время (сек)", "Значение"
+                        df, 'Время', temp_columns, "График температур", "Время (сек)", "Значение"
                     )
                     st.plotly_chart(fig_temps, use_container_width=True)
 
@@ -130,20 +149,20 @@ def main():
 
                     for idx, col in enumerate(voltage_columns):
                         fig_combined.add_trace(go.Scatter(
-                            x=df['time'], 
+                            x=df['Время'],
                             y=df[col],
-                            mode='lines', 
-                            name=f"Напряжение: {col}", 
+                            mode='lines',
+                            name=f"Напряжение: {col}",
                             yaxis="y1",
                             line=dict(color=colors_voltage[idx % len(colors_voltage)], width=2.5)
                         ))
 
                     for idx, col in enumerate(current_columns):
                         fig_combined.add_trace(go.Scatter(
-                            x=df['time'], 
+                            x=df['Время'],
                             y=df[col],
-                            mode='lines', 
-                            name=f"Ток: {col}", 
+                            mode='lines',
+                            name=f"Ток: {col}",
                             yaxis="y2",
                             line=dict(color=colors_current[idx % len(colors_current)], width=2.5)
                         ))
@@ -173,6 +192,9 @@ def main():
                             linecolor='black',
                             linewidth=2,
                             mirror=True,
+                            zeroline=True,
+                            zerolinecolor='black',
+                            zerolinewidth=2,
                             tickfont=dict(size=16, weight='bold')
                         ),
                         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
@@ -186,10 +208,11 @@ def main():
                             zeroline=True,
                             zerolinecolor='black',
                             zerolinewidth=2,
-                            linecolor='black',       # Чёрная ось X
-                            linewidth=3,             # Толще обычного
+                            linecolor='black',
+                            linewidth=3,
                             mirror=True,
-                            tickfont=dict(size=16, weight='bold')
+                            tickfont=dict(size=16, weight='bold'),
+                            tickformat="f"
                         )
                     )
                     st.plotly_chart(fig_combined, use_container_width=True)
@@ -198,7 +221,7 @@ def main():
                     st.subheader("Графики других параметров")
                     for column in other_numeric_columns:
                         fig_other = create_plot(
-                            df, 'time', [column], f"График для параметра: {column}", "Время (сек)", "Значение"
+                            df, 'Время', [column], f"График для параметра: {column}", "Время (сек)", "Значение"
                         )
                         st.plotly_chart(fig_other, use_container_width=True)
 
